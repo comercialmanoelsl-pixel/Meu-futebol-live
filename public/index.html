@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Meu Futebol Live</title>
+<style>
+:root{
+ --bg:#070b14;--panel:#0d1424;--card:#101827;--card2:#111f35;--line:#223049;
+ --text:#eef2ff;--muted:#91a1ba;--green:#22c55e;--red:#ef4444;--yellow:#facc15;--blue:#38bdf8;--purple:#a78bfa;
+}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at top,#12213a 0,#070b14 38%);color:var(--text);font-family:Inter,Arial,Helvetica,sans-serif}
+header{position:sticky;top:0;z-index:10;background:rgba(7,11,20,.88);backdrop-filter:blur(14px);border-bottom:1px solid var(--line);padding:14px 18px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px}.brand{display:flex;flex-direction:column}.brand h1{font-size:22px;margin:0}.brand span{font-size:12px;color:var(--muted)}
+.controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:12px}
+input,select,button{border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:#111827;color:#fff}
+button{background:linear-gradient(135deg,var(--green),#86efac);color:#052e13;font-weight:800;cursor:pointer;border:0}.btn2{background:linear-gradient(135deg,var(--blue),#bae6fd);color:#082f49}
+main{display:grid;grid-template-columns:1fr 300px;gap:14px;padding:14px}.side{display:flex;flex-direction:column;gap:12px}
+.ad,.panel{background:rgba(16,24,39,.86);border:1px solid var(--line);border-radius:18px;padding:14px;color:var(--muted)}.ad{border-style:dashed;min-height:160px}
+.statsbar{display:grid;grid-template-columns:repeat(4,minmax(120px,1fr));gap:10px;margin-bottom:14px}
+.kpi{background:linear-gradient(180deg,#101827,#0b1220);border:1px solid var(--line);border-radius:18px;padding:14px}.kpi b{font-size:22px}.kpi span{display:block;font-size:12px;color:var(--muted);margin-top:4px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(350px,1fr));gap:12px}.card{background:linear-gradient(180deg,var(--card),#0b1220);border:1px solid var(--line);border-radius:20px;padding:14px;box-shadow:0 18px 38px rgba(0,0,0,.22)}
+.card.live{border-color:#ef4444;box-shadow:0 0 0 1px rgba(239,68,68,.22),0 18px 38px rgba(0,0,0,.22)}
+.league{font-size:12px;color:var(--muted);display:flex;justify-content:space-between;margin-bottom:12px}.source{color:#c4b5fd}
+.teams{display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:center}.team{font-weight:900;font-size:15px}.away{text-align:right}.score{font-size:28px;color:var(--yellow);font-weight:950;white-space:nowrap}
+.meta{margin-top:10px;color:var(--muted);font-size:12px;display:flex;gap:8px;flex-wrap:wrap}.pill{padding:5px 9px;border-radius:999px;background:#1f2937}.live .pill{background:#3b1212;color:#fecaca}
+.hot{margin-top:10px;padding:9px;border-radius:12px;background:#111f35;color:#cbd5e1;font-size:12px;border:1px solid #243449}
+.actions{display:flex;gap:8px;margin-top:12px}.details{display:none;margin-top:12px;border-top:1px solid var(--line);padding-top:10px;max-height:680px;overflow:auto}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}.tab{background:#1f2937;color:#dbeafe;padding:7px 10px;border-radius:999px;font-size:12px;cursor:pointer}.tab.active{background:#38bdf8;color:#082f49;font-weight:800}
+table{width:100%;border-collapse:collapse;font-size:12px;margin:8px 0}th,td{border-bottom:1px solid #243449;text-align:left;padding:7px;vertical-align:top}th{color:#cbd5e1}
+.small{font-size:12px;color:var(--muted)}.error{color:#fecaca;background:#3b1212;padding:9px;border-radius:12px;margin:8px 0}.ok{color:#bbf7d0;background:#052e16;padding:9px;border-radius:12px;margin:8px 0}
+.bar{height:9px;background:#1f2937;border-radius:99px;overflow:hidden}.bar i{display:block;height:100%;background:linear-gradient(90deg,#22c55e,#38bdf8)}
+@media(max-width:980px){main{grid-template-columns:1fr}.side{display:none}.statsbar{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:560px){.top{align-items:flex-start;flex-direction:column}.grid{grid-template-columns:1fr}.teams{grid-template-columns:1fr}.score{text-align:left}.away{text-align:left}}
+</style>
+</head>
+<body>
+<header>
+ <div class="top">
+  <div class="brand"><h1>Meu Futebol Live</h1><span>estatísticas, tendências e jogos em tempo real</span></div>
+  <button onclick="loadGames()">Atualizar agora</button>
+ </div>
+ <div class="controls">
+  <input type="text" id="search" placeholder="Buscar time ou liga">
+  <input type="date" id="date">
+  <select id="filter"><option value="">Todos</option><option value="live">Só ao vivo</option><option value="pre">Futuros</option><option value="post">Finalizados</option></select>
+  <select id="sort"><option value="time">Ordenar por horário</option><option value="live">Ao vivo primeiro</option><option value="league">Por liga</option></select>
+ </div>
+</header>
+<main>
+ <section>
+  <div class="statsbar">
+   <div class="kpi"><b id="kTotal">-</b><span>Jogos encontrados</span></div>
+   <div class="kpi"><b id="kLive">-</b><span>Ao vivo agora</span></div>
+   <div class="kpi"><b id="kFinished">-</b><span>Finalizados</span></div>
+   <div class="kpi"><b id="kNext">-</b><span>Futuros</span></div>
+  </div>
+  <div id="status" class="small">Carregando...</div>
+  <div id="games" class="grid"></div>
+ </section>
+ <aside class="side">
+  <div class="ad"><b>Espaço para anúncio</b><br><br>Banner lateral para parceiros, fornecedores, casas de aposta ou empresas locais.</div>
+  <div class="panel"><b>Ideia do produto</b><br><br>Foco em chutes, escanteios, posse, eventos e tendência de pressão. Não é cópia do SofaScore: é análise rápida.</div>
+  <div class="panel"><b>Próximos passos</b><br><br>Favoritos, ranking de jogadores, alertas, análise bet e histórico dos últimos jogos.</div>
+ </aside>
+</main>
+<script>
+const dateEl=document.getElementById("date");dateEl.value=new Date().toISOString().slice(0,10);let allGames=[];
+function esc(s){return String(s??"").replace(/[&<>"']/g,function(m){return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[m]})}
+function gameHotText(g){if(g.live)return "🔥 Jogo ao vivo — acompanhe estatísticas e eventos"; if(g.state==="pre")return "⏳ Jogo futuro — clique para ver quando tiver dados"; return "✅ Finalizado — bom para revisar estatísticas";}
+async function loadGames(){
+ const status=document.getElementById("status");status.textContent="Buscando jogos em ESPN + API-Football...";
+ try{const res=await fetch("/api/games?date="+dateEl.value+"&_="+Date.now());const data=await res.json();if(!data.ok)throw new Error(data.error);allGames=data.games||[];updateKpis();status.textContent=`Atualizado: ${new Date().toLocaleTimeString("pt-BR")} · Fontes: ESPN + API-Football`;renderGames()}
+ catch(e){status.innerHTML=`<div class="error">Erro: ${esc(e.message||e)}</div>`}
+}
+function updateKpis(){document.getElementById("kTotal").textContent=allGames.length;document.getElementById("kLive").textContent=allGames.filter(g=>g.live).length;document.getElementById("kFinished").textContent=allGames.filter(g=>g.state==="post").length;document.getElementById("kNext").textContent=allGames.filter(g=>g.state==="pre").length;}
+function renderGames(){
+ const filter=document.getElementById("filter").value,q=document.getElementById("search").value.toLowerCase(),sort=document.getElementById("sort").value,box=document.getElementById("games");let games=[...allGames];
+ if(filter==="live")games=games.filter(g=>g.live); if(filter==="pre")games=games.filter(g=>g.state==="pre"); if(filter==="post")games=games.filter(g=>g.state==="post");
+ if(q)games=games.filter(g=>(g.home.name+" "+g.away.name+" "+g.league).toLowerCase().includes(q));
+ if(sort==="live")games.sort((a,b)=>(b.live?1:0)-(a.live?1:0)||new Date(a.date)-new Date(b.date)); if(sort==="league")games.sort((a,b)=>String(a.league).localeCompare(String(b.league)));
+ box.innerHTML="";games.forEach(g=>{const card=document.createElement("div");card.className="card "+(g.live?"live":"");card.innerHTML=`<div class="league"><span>${esc(g.league)}</span><span class="source">${esc(g.source)}</span></div><div class="teams"><div class="team">${esc(g.home.name)}</div><div class="score">${esc(g.home.score)} x ${esc(g.away.score)}</div><div class="team away">${esc(g.away.name)}</div></div><div class="meta"><span class="pill">${esc(g.status)}</span><span>${esc(g.minute)}</span><span>${esc(g.time)}</span></div><div class="hot">${gameHotText(g)}</div><div class="actions"><button class="btn2">Ver análise</button></div><div class="details"></div>`;card.querySelector("button").onclick=()=>details(g,card.querySelector(".details"));box.appendChild(card)})}
+function statRows(stats){return stats.map(s=>`<tr><td>${esc(s.team)}</td><td>${esc(s.label)}</td><td>${esc(s.value)}</td></tr>`).join("")}
+function renderInsight(data){
+ const a=data.analysis||{};let html=`<div class="ok"><b>Leitura rápida:</b> ${esc(a.trend||"Sem tendência forte ainda")}</div>`;
+ (a.insights||[]).forEach(x=>{html+=`<div class="small" style="margin:8px 0">${esc(x.label)}: <b>${esc(x.leader)}</b> lidera (${esc(x.aValue)} x ${esc(x.bValue)})<div class="bar"><i style="width:${Math.min(100,Math.max(8,Number(x.diff)*12))}%"></i></div></div>`});
+ return html;
+}
+async function details(g,div){
+ div.style.display="block";div.innerHTML="Buscando análise e estatísticas...";
+ try{const res=await fetch("/api/game-details?fixtureId="+encodeURIComponent(g.fixtureId)+"&_="+Date.now());const data=await res.json();if(!data.ok)throw new Error(data.error);
+ let tabs=`<div class="tabs"><span class="tab active">Resumo</span><span class="tab">Times</span><span class="tab">Eventos</span><span class="tab">Escalações</span></div>`;
+ let html=`<div class="ok">Fonte: ${esc(data.source)} | Fixture: ${esc(data.fixtureId)}</div>${tabs}${renderInsight(data)}`;
+ html+=`<h4>Estatísticas dos times</h4><table><tr><th>Time</th><th>Estatística</th><th>Valor</th></tr>${statRows(data.teamStats||[])}</table>`;
+ html+=`<h4>Eventos</h4><table><tr><th>Min</th><th>Time</th><th>Jogador</th><th>Tipo</th><th>Detalhe</th></tr>`;(data.events||[]).forEach(e=>html+=`<tr><td>${esc(e.minute)}</td><td>${esc(e.team)}</td><td>${esc(e.player||"")}</td><td>${esc(e.type)}</td><td>${esc(e.detail||e.comments||"")}</td></tr>`);html+=`</table>`;
+ html+=`<h4>Escalações</h4><table><tr><th>Time</th><th>Jogador</th><th>Nº</th><th>Pos</th><th>Tipo</th></tr>`;(data.lineups||[]).forEach(p=>html+=`<tr><td>${esc(p.team)}</td><td>${esc(p.player)}</td><td>${esc(p.number)}</td><td>${esc(p.pos)}</td><td>${esc(p.type)}</td></tr>`);html+=`</table>`;
+ if((data.teamStats||[]).length===0)html+=`<div class="error">A API não entregou estatísticas para esse jogo.</div>`;div.innerHTML=html}
+ catch(e){div.innerHTML=`<div class="error">Erro: ${esc(e.message||e)}</div>`}
+}
+["filter","search","sort"].forEach(id=>document.getElementById(id).addEventListener(id==="search"?"input":"change",renderGames));
+loadGames();setInterval(loadGames,60000);
+</script>
+</body></html>
